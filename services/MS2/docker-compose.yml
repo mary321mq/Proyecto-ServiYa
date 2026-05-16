@@ -1,0 +1,54 @@
+name: ms-user-prod
+
+version: "3.9"
+
+services:
+  mysql-user:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${USER_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${USER_MYSQL_DATABASE}
+    ports:
+      - "3312:3306" # Tu máquina (cliente externo) → MySQL prod
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -p${USER_MYSQL_ROOT_PASSWORD} || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mysql_user_data:/var/lib/mysql
+    networks:
+      - user-int
+
+  ms-user:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql-user:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      USER_DB_HOST: ${USER_DB_HOST}
+      USER_DB_PORT: ${USER_DB_PORT}
+      USER_DB_NAME: ${USER_DB_NAME}
+      USER_DB_USERNAME: ${USER_DB_USERNAME}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+    ports:
+      - "8082:8082"
+    networks:
+      - user-int
+      - ms-net
+
+volumes:
+  mysql_user_data:
+
+
+networks:
+  ms-net:
+    external: true
+    name: ms-net
+  user-int:
+    name: user-int

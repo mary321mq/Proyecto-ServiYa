@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: ms-auth
+  profiles:
+    active: dev
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:7071}"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:7081/eureka}
+  instance:
+    prefer-ip-address: true

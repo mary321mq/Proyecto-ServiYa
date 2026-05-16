@@ -1,0 +1,15 @@
+CREATE TABLE tecnicos (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(200) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  telefono VARCHAR(50) NULL,
+  lat DOUBLE NULL,
+  lng DOUBLE NULL,
+  ranking DOUBLE NOT NULL DEFAULT 0,
+  activo BIT NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_tecnico_email (email),
+  INDEX idx_tecnico_activo (activo)
+);

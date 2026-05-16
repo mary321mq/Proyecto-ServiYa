@@ -1,0 +1,18 @@
+name: ms-service-request-dev
+
+version: "3.9"
+
+services:
+  mysql-service-request-dev:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_service_request
+    ports:
+      - "3314:3306" # Tu máquina (cliente externo) → MySQL dev
+    volumes:
+      - mysql_service_request_dev_data:/var/lib/mysql
+
+volumes:
+  mysql_service_request_dev_data:

@@ -1,0 +1,14 @@
+package com.upeu.technician;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+@EnableFeignClients
+@SpringBootApplication
+public class TechnicianApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(TechnicianApplication.class, args);
+	}
+}
+

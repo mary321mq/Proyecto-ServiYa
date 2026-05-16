@@ -1,0 +1,54 @@
+name: ms-service-request-prod
+
+version: "3.9"
+
+services:
+  mysql-service-request:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SERVICE_REQUEST_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${SERVICE_REQUEST_MYSQL_DATABASE}
+    ports:
+      - "3314:3306" # Tu máquina (cliente externo) → MySQL prod
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -p${SERVICE_REQUEST_MYSQL_ROOT_PASSWORD} || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mysql_service_request_data:/var/lib/mysql
+    networks:
+      - service-request-int
+
+  ms-service-request:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql-service-request:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      SERVICE_REQUEST_DB_HOST: ${SERVICE_REQUEST_DB_HOST}
+      SERVICE_REQUEST_DB_PORT: ${SERVICE_REQUEST_DB_PORT}
+      SERVICE_REQUEST_DB_NAME: ${SERVICE_REQUEST_DB_NAME}
+      SERVICE_REQUEST_DB_USERNAME: ${SERVICE_REQUEST_DB_USERNAME}
+      SERVICE_REQUEST_DB_PASSWORD: ${SERVICE_REQUEST_DB_PASSWORD}
+    ports:
+      - "8084:8084"
+    networks:
+      - service-request-int
+      - ms-net
+
+volumes:
+  mysql_service_request_data:
+
+
+networks:
+  ms-net:
+    external: true
+    name: ms-net
+  service-request-int:
+    name: service-request-int

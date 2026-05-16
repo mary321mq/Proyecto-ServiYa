@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--
+        NopStatusListener: Suprime los mensajes de status INTERNOS de Logback.
+        Necesario para Spring Boot 3.5.x, que trata cualquier ERROR de status
+        como fatal (IllegalStateException). Loki4j seguirá reintentando la
+        conexión en background sin tirar abajo la aplicación.
+    -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+
+    <!-- ===================================================
+         Propiedades del servicio
+    =================================================== -->
+    <springProperty name="APP_NAME" source="spring.application.name" defaultValue="ms-payment"/>
+    <springProperty name="LOG_FILE"  source="logging.file.name"       defaultValue="./logs/ms-payment.log"/>
+    <springProperty name="LOG_LEVEL" source="logging.level.root"      defaultValue="INFO"/>
+
+    <!-- ===================================================
+         Appender: Consola (todos los perfiles)
+    =================================================== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ===================================================
+         Appender: Archivo de log (para Promtail)
+    =================================================== -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ===================================================
+         Appender: Loki via HTTP push (perfil PROD)
+         Apunta al contenedor loki en la red ms-net
+    =================================================== -->
+    <springProfile name="prod">
+        <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+            <http>
+                <url>http://loki:3100/loki/api/v1/push</url>
+            </http>
+            <format>
+                <label>
+                    <pattern>app=${APP_NAME},host=${HOSTNAME},level=%level</pattern>
+                </label>
+                <message>
+                    <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                </message>
+                <sortByTime>true</sortByTime>
+            </format>
+        </appender>
+
+        <root level="${LOG_LEVEL}">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="LOKI"/>
+        </root>
+    </springProfile>
+
+    <!-- ===================================================
+         Appender: Loki via HTTP push (perfil DEV)
+         Apunta a Loki en docker-compose-dev (puerto 13100)
+    =================================================== -->
+    <springProfile name="dev">
+        <appender name="LOKI_DEV" class="com.github.loki4j.logback.Loki4jAppender">
+            <http>
+                <url>http://localhost:13100/loki/api/v1/push</url>
+            </http>
+            <format>
+                <label>
+                    <pattern>app=${APP_NAME},host=${HOSTNAME},level=%level,env=dev</pattern>
+                </label>
+                <message>
+                    <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                </message>
+                <sortByTime>true</sortByTime>
+            </format>
+        </appender>
+
+        <root level="${LOG_LEVEL}">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="LOKI_DEV"/>
+        </root>
+    </springProfile>
+
+</configuration>

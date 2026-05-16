@@ -1,0 +1,55 @@
+name: ms-payment-prod
+
+version: "3.9"
+
+services:
+  mysql-payment:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PAYMENT_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${PAYMENT_MYSQL_DATABASE}
+    ports:
+      - "3316:3306"
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -p${PAYMENT_MYSQL_ROOT_PASSWORD} || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mysql_payment_data:/var/lib/mysql
+    networks:
+      - payment-int
+
+  ms-payment:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql-payment:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      PAYMENT_DB_HOST: ${PAYMENT_DB_HOST}
+      PAYMENT_DB_PORT: ${PAYMENT_DB_PORT}
+      PAYMENT_DB_NAME: ${PAYMENT_DB_NAME}
+      PAYMENT_DB_USERNAME: ${PAYMENT_DB_USERNAME}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./logs:/var/log/app
+    networks:
+      - payment-int
+      - ms-net
+
+volumes:
+  mysql_payment_data:
+
+networks:
+  ms-net:
+    external: true
+    name: ms-net
+  payment-int:
+    name: payment-int

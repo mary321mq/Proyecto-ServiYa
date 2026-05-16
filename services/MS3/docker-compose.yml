@@ -1,0 +1,56 @@
+name: ms-technician-prod
+
+version: "3.9"
+
+services:
+  mysql-technician:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${TECHNICIAN_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${TECHNICIAN_MYSQL_DATABASE}
+    ports:
+      - "3313:3306" # Tu máquina (cliente externo) → MySQL prod
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -p${TECHNICIAN_MYSQL_ROOT_PASSWORD} || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mysql_technician_data:/var/lib/mysql
+    networks:
+      - technician-int
+
+  ms-technician:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql-technician:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      TECHNICIAN_DB_HOST: ${TECHNICIAN_DB_HOST}
+      TECHNICIAN_DB_PORT: ${TECHNICIAN_DB_PORT}
+      TECHNICIAN_DB_NAME: ${TECHNICIAN_DB_NAME}
+      TECHNICIAN_DB_USERNAME: ${TECHNICIAN_DB_USERNAME}
+      TECHNICIAN_DB_PASSWORD: ${TECHNICIAN_DB_PASSWORD}
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./logs:/var/log/app
+    networks:
+      - technician-int
+      - ms-net
+
+volumes:
+  mysql_technician_data:
+
+
+networks:
+  ms-net:
+    external: true
+    name: ms-net
+  technician-int:
+    name: technician-int

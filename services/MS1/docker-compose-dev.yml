@@ -1,0 +1,18 @@
+name: ms-auth-dev
+
+version: "3.9"
+
+services:
+  mysql-auth-dev:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_auth
+    ports:
+      - "3310:3306" # Tu máquina (cliente externo) → MySQL dev
+    volumes:
+      - mysql_auth_dev_data:/var/lib/mysql
+
+volumes:
+  mysql_auth_dev_data:
